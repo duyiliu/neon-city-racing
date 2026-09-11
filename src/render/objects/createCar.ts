@@ -3,6 +3,7 @@ import * as THREE from "three";
 export interface CarVisual {
   root: THREE.Group;
   wheels: THREE.Mesh[];
+  frontWheels: THREE.Mesh[];
   brakeLights: THREE.MeshStandardMaterial;
   nitroFlames: THREE.Mesh[];
 }
@@ -43,6 +44,7 @@ export function createCar(): CarVisual {
   }
 
   const wheels: THREE.Mesh[] = [];
+  const frontWheels: THREE.Mesh[] = [];
   const wheelGeometry = new THREE.CylinderGeometry(0.42, 0.42, 0.34, 18);
   for (const x of [-1.12, 1.12]) {
     for (const z of [-1.35, 1.35]) {
@@ -51,6 +53,7 @@ export function createCar(): CarVisual {
       wheel.position.set(x, 0.55, z);
       wheel.castShadow = true;
       wheels.push(wheel);
+      if (z > 0) frontWheels.push(wheel);
       root.add(wheel);
     }
   }
@@ -72,5 +75,5 @@ export function createCar(): CarVisual {
     root.add(flame);
   }
 
-  return { root, wheels, brakeLights, nitroFlames };
+  return { root, wheels, frontWheels, brakeLights, nitroFlames };
 }
