@@ -48,6 +48,7 @@ export class Hud {
 
   update(vehicle: VehicleState, mission: MissionState, paused: boolean): void {
     this.speed.textContent = Math.round(vehicle.displaySpeed).toString().padStart(3, "0");
+    this.speed.classList.toggle("boosting", vehicle.boostActive);
     this.nitro.style.width = `${vehicle.nitro}%`;
     const minutes = Math.floor(mission.timeRemaining / 60);
     const seconds = mission.timeRemaining - minutes * 60;
@@ -56,8 +57,12 @@ export class Hud {
     this.progress.textContent = mission.status === "active"
       ? `CHECKPOINT ${mission.checkpointIndex + 1} / ${CHECKPOINTS.length}`
       : mission.status.toUpperCase();
-    this.surface.textContent = vehicle.offroad ? "OFF ROAD" : vehicle.drifting ? "DRIFT" : "ROAD";
-    this.surface.classList.toggle("warning", vehicle.offroad || vehicle.drifting);
+
+    if (vehicle.offroad) this.surface.textContent = "OFF ROAD";
+    else if (vehicle.boostActive) this.surface.textContent = "BOOST";
+    else if (vehicle.drifting) this.surface.textContent = `DRIFT ${Math.round(Math.abs(vehicle.slipAngle) * 57.3)}°`;
+    else this.surface.textContent = "ROAD";
+    this.surface.classList.toggle("warning", vehicle.offroad || vehicle.drifting || vehicle.boostActive);
 
     if (!this.hintHidden && vehicle.displaySpeed > 35) {
       this.hintHidden = true;
