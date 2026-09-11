@@ -19,6 +19,9 @@ export interface VehicleState {
   nitro: number;
   drifting: boolean;
   offroad: boolean;
+  slipAngle: number;
+  boostActive: boolean;
+  steerVisual: number;
 }
 
 export interface MissionState {
