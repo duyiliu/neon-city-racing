@@ -1,0 +1,154 @@
+:root {
+  color: #effbff;
+  background: #07111c;
+  font-family: "Bahnschrift", "Segoe UI Variable", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+  --cyan: #45efff;
+  --blue: #168dff;
+  --pink: #ff3f91;
+  --panel: rgba(5, 19, 31, 0.74);
+  --line: rgba(112, 232, 255, 0.28);
+}
+
+* { box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { overscroll-behavior: none; }
+button { font: inherit; }
+.game-canvas { display: block; width: 100%; height: 100%; }
+.hud { position: fixed; inset: 0; pointer-events: none; user-select: none; }
+
+.objective-chip {
+  position: absolute;
+  top: clamp(18px, 3vw, 34px);
+  left: clamp(18px, 3vw, 42px);
+  display: grid;
+  gap: 3px;
+  min-width: 220px;
+  padding: 13px 18px 14px 20px;
+  background: linear-gradient(105deg, var(--panel), rgba(9, 31, 48, 0.36));
+  border-left: 3px solid var(--cyan);
+  clip-path: polygon(0 0, 94% 0, 100% 24%, 100% 100%, 0 100%);
+  backdrop-filter: blur(12px);
+  text-transform: uppercase;
+}
+.objective-chip .eyebrow { color: var(--cyan); font-size: 10px; letter-spacing: 0.18em; }
+.objective-chip strong { font-size: 17px; letter-spacing: 0.06em; }
+.objective-chip #progress { color: #9db5c2; font-size: 11px; letter-spacing: 0.12em; }
+
+.status-cluster {
+  position: absolute;
+  right: clamp(18px, 3vw, 42px);
+  bottom: clamp(22px, 4vw, 46px);
+  width: clamp(190px, 20vw, 260px);
+  padding: 15px 18px 16px;
+  background: linear-gradient(120deg, rgba(5, 19, 31, 0.36), var(--panel));
+  border-right: 3px solid var(--cyan);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+  text-align: right;
+}
+.timer { color: #dffbff; font-size: 15px; letter-spacing: 0.14em; transition: color 180ms; }
+.timer.danger { color: #ff5d7d; animation: pulse 0.6s infinite alternate; }
+.speedometer { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; line-height: 1; }
+.speedometer span { font-size: clamp(48px, 6vw, 74px); font-weight: 800; letter-spacing: -0.06em; text-shadow: 0 0 20px rgba(69, 239, 255, 0.32); }
+.speedometer small { color: var(--cyan); font-size: 10px; letter-spacing: 0.16em; }
+.nitro-label { display: flex; justify-content: space-between; margin-top: 9px; color: #9db5c2; font-size: 9px; letter-spacing: 0.15em; }
+.nitro-track { height: 7px; margin-top: 5px; overflow: hidden; background: rgba(130, 205, 225, 0.14); transform: skewX(-16deg); }
+.nitro-track i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan), #e9ffff); box-shadow: 0 0 14px var(--cyan); transition: width 80ms linear; }
+.surface { display: inline-block; margin-top: 9px; color: #6feaff; font-size: 10px; letter-spacing: 0.18em; }
+.surface.warning { color: #ffce47; }
+
+.controls-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  display: flex;
+  gap: 18px;
+  padding: 9px 15px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(117, 222, 244, 0.18);
+  border-radius: 3px;
+  background: rgba(4, 13, 22, 0.68);
+  color: #a9bec8;
+  font-size: 11px;
+  backdrop-filter: blur(10px);
+  transition: opacity 600ms, transform 600ms;
+}
+.controls-hint.hidden { opacity: 0; transform: translate(-50%, 12px); }
+kbd { color: white; font-family: inherit; font-size: 10px; letter-spacing: 0.1em; }
+
+.pause-button {
+  position: absolute;
+  top: clamp(18px, 3vw, 34px);
+  right: clamp(18px, 3vw, 42px);
+  width: 38px;
+  height: 38px;
+  pointer-events: auto;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(4, 17, 28, 0.62);
+  color: #c7f8ff;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+.pause-button:hover { border-color: var(--cyan); background: rgba(15, 62, 80, 0.7); }
+
+.center-message {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  display: grid;
+  gap: 8px;
+  min-width: min(420px, 80vw);
+  padding: 22px 34px;
+  transform: translate(-50%, -45%) scale(0.95);
+  background: linear-gradient(90deg, transparent, rgba(2, 12, 21, 0.88) 16%, rgba(2, 12, 21, 0.88) 84%, transparent);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 180ms, transform 180ms;
+}
+.center-message.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.center-message strong { color: white; font-size: clamp(32px, 5vw, 58px); font-style: italic; letter-spacing: 0.08em; text-shadow: 0 0 28px rgba(69, 239, 255, 0.5); }
+.center-message span { color: #9dc7d3; font-size: 13px; letter-spacing: 0.08em; }
+
+.checkpoint-flash::after {
+  content: "CHECKPOINT";
+  position: absolute;
+  top: 32%; left: 50%;
+  color: #dfffff;
+  font-size: clamp(28px, 6vw, 72px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 24px var(--cyan);
+  animation: checkpoint 0.9s ease-out both;
+}
+
+@keyframes checkpoint {
+  from { opacity: 0; transform: translate(-45%, 15px) scale(1.15); }
+  25% { opacity: 1; }
+  to { opacity: 0; transform: translate(-55%, -20px) scale(0.92); }
+}
+@keyframes pulse { from { opacity: 0.62; } to { opacity: 1; } }
+
+@media (max-width: 680px) {
+  .objective-chip { min-width: 180px; max-width: calc(100vw - 82px); padding: 10px 13px; }
+  .objective-chip strong { font-size: 14px; }
+  .status-cluster { width: 168px; padding: 10px 13px; }
+  .speedometer span { font-size: 44px; }
+  .controls-hint {
+    top: 104px;
+    bottom: auto;
+    left: 18px;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100vw - 36px);
+    transform: none;
+    font-size: 9px;
+  }
+  .controls-hint.hidden { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
