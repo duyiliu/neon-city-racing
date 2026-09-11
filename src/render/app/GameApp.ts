@@ -86,24 +86,59 @@ export class GameApp {
 
   private syncVisuals(delta: number): void {
     const state = this.vehicle.state;
+    const input = this.input.read();
+    const safeDelta = Math.min(delta, 0.05);
+    const visualLerp = 1 - Math.pow(0.004, safeDelta);
+
     this.car.root.position.set(state.position.x, 0, state.position.z);
     this.car.root.rotation.y = state.yaw;
-    this.car.root.rotation.z = THREE.MathUtils.lerp(this.car.root.rotation.z, -this.input.read().steer * Math.min(state.displaySpeed / 500, 0.08), 0.12);
-    this.car.wheels.forEach((wheel) => { wheel.rotation.x += state.speed * delta * 1.8; });
-    const nitroActive = this.input.read().nitro && state.nitro > 0 && state.displaySpeed > 30;
+
+    const targetRoll = -state.steerVisual * Math.min(state.displaySpeed / 900, 0.09) - state.slipAngle * 0.08;
+    const targetPitch = state.boostActive ? -0.022 : input.throttle < 0 ? 0.026 : input.throttle > 0 ? -0.012 : 0;
+    this.car.root.rotation.z = THREE.MathUtils.lerp(this.car.root.rotation.z, targetRoll, visualLerp);
+    this.car.root.rotation.x = THREE.MathUtils.lerp(this.car.root.rotation.x, targetPitch, visualLerp * 0.7);
+
+    this.car.wheels.forEach((wheel) => {
+      wheel.rotation.x += state.speed * safeDelta * 1.8;
+    });
+
+    this.car.brakeLights.emissiveIntensity = input.throttle < 0 ? 3.4 : 1.1;
     this.car.nitroFlames.forEach((flame, index) => {
-      flame.visible = nitroActive;
-      flame.scale.y = 0.8 + Math.sin(this.elapsed * 35 + index) * 0.18;
+      flame.visible = state.boostActive;
+      const pulse = 1 + Math.sin(this.elapsed * 42 + index * 1.7) * 0.2;
+      flame.scale.set(0.9 + pulse * 0.08, 0.9 + pulse * 0.35, 0.9 + pulse * 0.08);
     });
 
     const forward = new THREE.Vector3(Math.sin(state.yaw), 0, Math.cos(state.yaw));
-    const desired = new THREE.Vector3(state.position.x, 4.5, state.position.z)
-      .addScaledVector(forward, -9.5);
-    const cameraLerp = 1 - Math.pow(0.002, Math.min(delta, 0.05));
+    const right = new THREE.Vector3(forward.z, 0, -forward.x);
+    const speed01 = THREE.MathUtils.clamp(state.displaySpeed / 310, 0, 1);
+    const driftOffset = THREE.MathUtils.clamp(state.slipAngle * 3.2, -1.7, 1.7);
+    const chaseDistance = THREE.MathUtils.lerp(8.7, state.boostActive ? 12.4 : 10.4, speed01);
+    const chaseHeight = THREE.MathUtils.lerp(4.1, 4.9, speed01);
+
+    const desired = new THREE.Vector3(state.position.x, chaseHeight, state.position.z)
+      .addScaledVector(forward, -chaseDistance)
+      .addScaledVector(right, driftOffset);
+
+    if (state.boostActive) {
+      const shake = Math.sin(this.elapsed * 58) * 0.045;
+      desired.addScaledVector(right, shake);
+      desired.y += Math.cos(this.elapsed * 47) * 0.025;
+    } else if (state.offroad && state.displaySpeed > 45) {
+      desired.y += Math.sin(this.elapsed * 36) * 0.055;
+    }
+
+    const cameraLerp = 1 - Math.pow(state.drifting ? 0.018 : 0.0035, safeDelta);
     this.camera.position.lerp(desired, cameraLerp);
-    const lookAt = new THREE.Vector3(state.position.x, 1.1, state.position.z).addScaledVector(forward, 6);
+
+    const lookAhead = THREE.MathUtils.lerp(5.5, 10.5, speed01);
+    const lookAt = new THREE.Vector3(state.position.x, 1.05, state.position.z)
+      .addScaledVector(forward, lookAhead)
+      .addScaledVector(right, driftOffset * 0.38);
     this.camera.lookAt(lookAt);
-    this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, nitroActive ? 70 : 62, 0.06);
+
+    const targetFov = state.boostActive ? 74 : THREE.MathUtils.lerp(62, 66.5, speed01);
+    this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFov, state.boostActive ? 0.1 : 0.055);
     this.camera.updateProjectionMatrix();
 
     this.checkpoints.update(this.mission.state.checkpointIndex, this.elapsed);
