@@ -14,6 +14,17 @@ describe("VehicleSimulation", () => {
     expect(Math.abs(vehicle.state.position.z)).toBeLessThanOrEqual(139);
   });
 
+  it("exposes boost and drift feedback for the renderer", () => {
+    const vehicle = new VehicleSimulation();
+    for (let i = 0; i < 70; i += 1) {
+      vehicle.update({ throttle: 1, steer: 0, handbrake: false, nitro: false }, 1 / 60);
+    }
+    vehicle.update({ throttle: 1, steer: 1, handbrake: true, nitro: true }, 1 / 60);
+    expect(vehicle.state.boostActive).toBe(true);
+    expect(vehicle.state.drifting).toBe(true);
+    expect(Math.abs(vehicle.state.slipAngle)).toBeGreaterThan(0);
+  });
+
   it("resets the vehicle to the starting state", () => {
     const vehicle = new VehicleSimulation();
     vehicle.update({ throttle: 1, steer: 1, handbrake: true, nitro: false }, 1);
@@ -21,6 +32,8 @@ describe("VehicleSimulation", () => {
     expect(vehicle.state.position).toEqual({ x: 0, z: 92 });
     expect(vehicle.state.displaySpeed).toBe(0);
     expect(vehicle.state.nitro).toBe(100);
+    expect(vehicle.state.slipAngle).toBe(0);
+    expect(vehicle.state.boostActive).toBe(false);
   });
 });
 
